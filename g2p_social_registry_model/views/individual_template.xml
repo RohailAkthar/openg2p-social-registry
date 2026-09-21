@@ -1769,8 +1769,9 @@
         <!-- Body: Merge names into one column and remove Last Name column -->
         <xpath expr="//table//tbody//tr//td[2]" position="replace">
             <td style="color:#1e40af; font: normal normal 600 13px/16px Inter;" data-search-field="name">
-                <span t-out="group.family_name"/>, <span t-out="group.given_name"/>
+                <span t-out="group.given_name"/>
                 <t t-if="group.middle_name"> <span t-out="group.middle_name"/></t>
+                <t t-if="group.family_name"> <span t-out="group.family_name"/></t>
             </td>
         </xpath>
         <xpath expr="//table//tbody//tr//td[3]" position="replace">

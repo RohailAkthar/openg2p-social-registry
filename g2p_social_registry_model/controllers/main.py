@@ -492,14 +492,13 @@ class G2PSocialRegistryModel(G2PregistrationPortalBase):
 
             user = request.env.user
             name = ""
-            if kw.get("family_name"):
-                name += kw.get("family_name") + ", "
-            if kw.get("given_name"):
-                name += kw.get("given_name") + " "
-            if kw.get("middle_name"):
-                name += kw.get("middle_name") + " "
-            if kw.get("addl_name"):
-                name += kw.get("addl_name") + " "
+            name_parts = [
+                kw.get("given_name"),
+                kw.get("middle_name"),
+                kw.get("addl_name"),
+                kw.get("family_name"),
+            ]
+            name = " ".join(p.strip() for p in name_parts if p and p.strip())
             if kw.get("birthdate") == "":
                 birthdate = False
             else:
@@ -718,12 +717,12 @@ class G2PSocialRegistryModel(G2PregistrationPortalBase):
                     m_name = kw.get("middle_name") if "middle_name" in kw else (member.middle_name or "")
                     a_name = kw.get("addl_name") if "addl_name" in kw else (member.addl_name or "")
                     
-                    # Construct and normalize the new name
+                    # Construct and normalize the new name: First Name, Middle Name, Additional Name, Surname
                     new_parts = []
-                    if f_name: new_parts.append(f_name + ",")
                     if g_name: new_parts.append(g_name)
                     if m_name: new_parts.append(m_name)
                     if a_name: new_parts.append(a_name)
+                    if f_name: new_parts.append(f_name)
                     new_name = " ".join(" ".join(new_parts).split()).strip()
                     
                     if normalize_space(member.name) != new_name:
