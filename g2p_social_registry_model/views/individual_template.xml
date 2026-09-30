@@ -205,19 +205,63 @@
                         </div>
                     </div>
                     <div class="col-lg-4">
-                        <div class="s_website_form_field mb-3">
+                        <div class="s_website_form_field mb-3 position-relative" id="nominee_shehia_field_container">
                             <label class="s_website_form_label" for="nominee_shehia">
                                 <span class="s_website_form_label_content" style="color: #666666;">Shehia (Ward)</span>
                                 <span class="s_website_form_mark">*</span>
                             </label>
-                            <input
-                                type="text"
-                                id="nominee_shehia"
-                                name="nominee_shehia"
-                                class="form-control"
-                                required="1"
-                                t-att-value="beneficiary.nominee_shehia if beneficiary else ''"
-                            />
+                            
+                            <!-- Hidden select to keep value and form name="nominee_shehia" -->
+                            <select id="nominee_shehia" name="nominee_shehia" class="form-select" style="position: absolute; opacity: 0; pointer-events: none; height: 0; width: 0; margin: 0; padding: 0;" tabindex="-1">
+                                <option value="">Select Shehia</option>
+                                <t t-foreach="shehias" t-as="s">
+                                    <option t-att-value="s.name"
+                                            t-att-data-shehia-id="s.id"
+                                            t-att-data-district-id="s.district_id.id"
+                                            t-att-data-district-code="s.district_id.code"
+                                            t-att-data-district-name="s.district_id.name"
+                                            t-att-data-region-id="s.region_id.id"
+                                            t-att-data-region-code="s.region_id.code"
+                                            t-att-selected="beneficiary and beneficiary.nominee_shehia == s.name">
+                                        <t t-esc="s.name"/>
+                                    </option>
+                                </t>
+                            </select>
+
+                            <!-- Searchable Input UI -->
+                            <div class="input-group" id="nominee_shehia_search_group">
+                                <span class="input-group-text bg-white border-end-0 text-muted" style="border-color: #ced4da;">
+                                    <i class="fa fa-search" style="font-size: 13px;"></i>
+                                </span>
+                                <input type="text"
+                                       id="nominee_shehia_search_input"
+                                       class="form-control border-start-0 border-end-0"
+                                       placeholder="Type to search Shehia..."
+                                       autocomplete="off"
+                                       style="border-color: #ced4da; box-shadow: none;"
+                                       required="1" />
+                                <button type="button"
+                                        id="nominee_shehia_clear_btn"
+                                        class="btn btn-outline-secondary border-start-0 border-end-0 text-muted"
+                                        style="display: none; border-color: #ced4da; box-shadow: none;"
+                                        tabindex="-1"
+                                        title="Clear">
+                                    &amp;times;
+                                </button>
+                                <button type="button"
+                                        id="nominee_shehia_dropdown_toggle"
+                                        class="btn btn-outline-secondary text-muted"
+                                        style="border-color: #ced4da; box-shadow: none;"
+                                        tabindex="-1">
+                                    <span style="font-size: 10px;">&#9660;</span>
+                                </button>
+                            </div>
+
+                            <!-- Custom Dropdown Menu -->
+                            <div id="nominee_shehia_dropdown_menu"
+                                 class="shadow border rounded-bottom"
+                                 style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1060; background: #fff; max-height: 260px; overflow-y: auto; margin-top: 2px;">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -262,6 +306,7 @@
         </div>
         
         <script type="text/javascript">
+        <![CDATA[
             // Helper to set image globally
             window.setImg = function(id, b64) {
                 if (!b64) return;
@@ -302,12 +347,18 @@
                 try {
                     var nomRegionSelect = document.getElementById('nominee_region');
                     var nomDistrictSelect = document.getElementById('nominee_district');
-                    
+                    var nomShehiaSelect = document.getElementById('nominee_shehia');
+                    var nomShehiaSearchInput = document.getElementById('nominee_shehia_search_input');
+                    var nomShehiaDropdownMenu = document.getElementById('nominee_shehia_dropdown_menu');
+                    var nomShehiaClearBtn = document.getElementById('nominee_shehia_clear_btn');
+                    var nomShehiaDropdownToggle = document.getElementById('nominee_shehia_dropdown_toggle');
+                    var nomCurrentActiveIndex = -1;
+
                     if (!nomRegionSelect || !nomDistrictSelect) {
                         return;
                     }
 
-                    // Clone allowed options
+                    // Clone allowed options for districts
                     var allNomDistricts = Array.from(nomDistrictSelect.options).map(function(opt) {
                         return { 
                             text: opt.text, 
@@ -316,7 +367,291 @@
                             regionCode: opt.getAttribute('data-region-code')
                         };
                     });
-                    
+
+                    // Clone allowed options for shehias
+                    var allNomShehias = [];
+                    if (nomShehiaSelect) {
+                        allNomShehias = Array.from(nomShehiaSelect.options).map(function(opt) {
+                            return {
+                                text: opt.text,
+                                value: opt.value,
+                                shehiaId: opt.getAttribute('data-shehia-id'),
+                                districtId: opt.getAttribute('data-district-id'),
+                                districtCode: opt.getAttribute('data-district-code'),
+                                districtName: opt.getAttribute('data-district-name'),
+                                regionId: opt.getAttribute('data-region-id'),
+                                regionCode: opt.getAttribute('data-region-code')
+                            };
+                        });
+                    }
+
+                    function closeNomShehiaDropdown() {
+                        if (nomShehiaDropdownMenu) {
+                            nomShehiaDropdownMenu.style.display = 'none';
+                            nomCurrentActiveIndex = -1;
+                        }
+                    }
+
+                    function setNomActiveItem(idx, items) {
+                        if (!items || items.length === 0) return;
+                        items.forEach(function(el, i) {
+                            if (i === idx) {
+                                el.style.backgroundColor = '#e9ecef';
+                                el.scrollIntoView({ block: 'nearest' });
+                            } else if (nomShehiaSelect && nomShehiaSelect.value === el.getAttribute('data-value')) {
+                                el.style.backgroundColor = '#e7f1ff';
+                            } else {
+                                el.style.backgroundColor = '#fff';
+                            }
+                        });
+                        nomCurrentActiveIndex = idx;
+                    }
+
+                    function selectNomShehia(val) {
+                        if (nomShehiaSelect) nomShehiaSelect.value = val;
+                        if (nomShehiaSearchInput) {
+                            nomShehiaSearchInput.value = val;
+                            nomShehiaSearchInput.setCustomValidity('');
+                        }
+                        if (nomShehiaClearBtn) {
+                            nomShehiaClearBtn.style.display = val ? 'inline-block' : 'none';
+                        }
+                        closeNomShehiaDropdown();
+                        if (nomShehiaSelect) nomShehiaSelect.dispatchEvent(new Event('change'));
+                    }
+
+                    function isShehiaInDistrict(s, selectedDistVal) {
+                        if (!selectedDistVal) return false;
+                        var dist = selectedDistVal.trim().toLowerCase();
+                        return (
+                            (s.districtCode && s.districtCode.trim().toLowerCase() === dist) ||
+                            (s.districtId && String(s.districtId) === dist) ||
+                            (s.districtName && s.districtName.trim().toLowerCase() === dist)
+                        );
+                    }
+
+                    function renderNomShehiaDropdown(searchTerm) {
+                        if (!nomShehiaDropdownMenu) return;
+                        var term = (searchTerm || '').trim().toLowerCase();
+                        var selectedDistVal = nomDistrictSelect ? nomDistrictSelect.value : "";
+
+                        var matches = [];
+                        allNomShehias.forEach(function(s) {
+                            if (!s.value) return;
+                            if (!selectedDistVal || isShehiaInDistrict(s, selectedDistVal)) {
+                                if (!term || s.text.toLowerCase().includes(term)) {
+                                    matches.push(s);
+                                }
+                            }
+                        });
+
+                        nomShehiaDropdownMenu.innerHTML = '';
+                        nomCurrentActiveIndex = -1;
+
+                        if (!selectedDistVal) {
+                            var msg = document.createElement('div');
+                            msg.className = 'p-3 text-muted text-center';
+                            msg.innerHTML = '<small><i class="fa fa-info-circle me-1"></i>Please select a District first</small>';
+                            nomShehiaDropdownMenu.appendChild(msg);
+                        } else if (matches.length === 0) {
+                            var noMatch = document.createElement('div');
+                            noMatch.className = 'p-3 text-muted text-center';
+                            var b = document.createElement('b');
+                            b.textContent = searchTerm;
+                            noMatch.innerHTML = '<small><i class="fa fa-search me-1"></i>No Shehia found matching "</small>';
+                            noMatch.querySelector('small').appendChild(b);
+                            noMatch.querySelector('small').appendChild(document.createTextNode('"'));
+                            nomShehiaDropdownMenu.appendChild(noMatch);
+                        } else {
+                            matches.forEach(function(s, idx) {
+                                var item = document.createElement('div');
+                                item.className = 'nom-shehia-dropdown-item';
+                                item.style.padding = '8px 14px';
+                                item.style.cursor = 'pointer';
+                                item.style.fontSize = '14px';
+                                item.style.borderBottom = '1px solid #f2f2f2';
+                                item.setAttribute('data-value', s.value);
+
+                                if (nomShehiaSelect && nomShehiaSelect.value === s.value) {
+                                    item.style.backgroundColor = '#e7f1ff';
+                                    item.style.fontWeight = '600';
+                                    item.style.color = '#0d6efd';
+                                }
+
+                                if (term) {
+                                    var escaped = term.split('').map(function(c) { return /[.*+?^${}()|[\]\\]/.test(c) ? '\\' + c : c; }).join('');
+                                    var regex = new RegExp('(' + escaped + ')', 'gi');
+                                    var span = document.createElement('span');
+                                    span.textContent = s.text;
+                                    item.innerHTML = span.innerHTML.replace(regex, '<span style="background-color: #ffeeba; font-weight: bold; padding: 0 1px;">$1</span>');
+                                } else {
+                                    item.textContent = s.text;
+                                }
+
+                                item.addEventListener('mouseenter', function() {
+                                    var allItems = nomShehiaDropdownMenu.querySelectorAll('.nom-shehia-dropdown-item');
+                                    setNomActiveItem(idx, allItems);
+                                });
+
+                                item.addEventListener('mousedown', function(e) {
+                                    e.preventDefault();
+                                    selectNomShehia(s.value);
+                                });
+
+                                nomShehiaDropdownMenu.appendChild(item);
+                            });
+                        }
+
+                        nomShehiaDropdownMenu.style.display = 'block';
+                    }
+
+                    if (nomShehiaSearchInput) {
+                        nomShehiaSearchInput.addEventListener('input', function() {
+                            var term = this.value;
+                            if (nomShehiaClearBtn) {
+                                nomShehiaClearBtn.style.display = term ? 'inline-block' : 'none';
+                            }
+                            renderNomShehiaDropdown(term);
+                        });
+
+                        nomShehiaSearchInput.addEventListener('focus', function() {
+                            renderNomShehiaDropdown(this.value);
+                        });
+
+                        nomShehiaSearchInput.addEventListener('click', function() {
+                            renderNomShehiaDropdown(this.value);
+                        });
+
+                        nomShehiaSearchInput.addEventListener('keydown', function(e) {
+                            var items = nomShehiaDropdownMenu ? nomShehiaDropdownMenu.querySelectorAll('.nom-shehia-dropdown-item') : [];
+                            if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                if (nomShehiaDropdownMenu && nomShehiaDropdownMenu.style.display === 'none') {
+                                    renderNomShehiaDropdown(this.value);
+                                    return;
+                                }
+                                if (items.length > 0) {
+                                    var next = (nomCurrentActiveIndex + 1) % items.length;
+                                    setNomActiveItem(next, items);
+                                }
+                            } else if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                if (items.length > 0) {
+                                    var prev = (nomCurrentActiveIndex - 1 + items.length) % items.length;
+                                    setNomActiveItem(prev, items);
+                                }
+                            } else if (e.key === 'Enter') {
+                                if (nomShehiaDropdownMenu && nomShehiaDropdownMenu.style.display !== 'none' && nomCurrentActiveIndex >= 0 && nomCurrentActiveIndex < items.length) {
+                                    e.preventDefault();
+                                    var val = items[nomCurrentActiveIndex].getAttribute('data-value');
+                                    selectNomShehia(val);
+                                }
+                            } else if (e.key === 'Escape') {
+                                closeNomShehiaDropdown();
+                            }
+                        });
+                    }
+
+                    if (nomShehiaDropdownToggle) {
+                        nomShehiaDropdownToggle.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            if (nomShehiaDropdownMenu && nomShehiaDropdownMenu.style.display === 'block') {
+                                closeNomShehiaDropdown();
+                            } else {
+                                if (nomShehiaSearchInput) nomShehiaSearchInput.focus();
+                                renderNomShehiaDropdown('');
+                            }
+                        });
+                    }
+
+                    if (nomShehiaClearBtn) {
+                        nomShehiaClearBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            selectNomShehia('');
+                            renderNomShehiaDropdown('');
+                            if (nomShehiaSearchInput) nomShehiaSearchInput.focus();
+                        });
+                    }
+
+                    document.addEventListener('click', function(e) {
+                        var container = document.getElementById('nominee_shehia_field_container');
+                        if (container && !container.contains(e.target)) {
+                            closeNomShehiaDropdown();
+                            if (nomShehiaSelect && nomShehiaSearchInput) {
+                                if (nomShehiaSelect.value) {
+                                    nomShehiaSearchInput.value = nomShehiaSelect.value;
+                                    if (nomShehiaClearBtn) nomShehiaClearBtn.style.display = 'inline-block';
+                                } else {
+                                    nomShehiaSearchInput.value = '';
+                                    if (nomShehiaClearBtn) nomShehiaClearBtn.style.display = 'none';
+                                }
+                            }
+                        }
+                    });
+
+                    window.resetNomShehiaSearch = function() {
+                        if (nomShehiaSelect) nomShehiaSelect.value = '';
+                        if (nomShehiaSearchInput) {
+                            nomShehiaSearchInput.value = '';
+                            nomShehiaSearchInput.setCustomValidity('');
+                        }
+                        if (nomShehiaClearBtn) nomShehiaClearBtn.style.display = 'none';
+                        closeNomShehiaDropdown();
+                    };
+
+                    function filterNomShehias(preserveSelection) {
+                        if (!nomShehiaSelect) return;
+                        var selectedDistVal = nomDistrictSelect ? nomDistrictSelect.value : "";
+                        var currentShehiaVal = preserveSelection ? nomShehiaSelect.value : "";
+
+                        nomShehiaSelect.innerHTML = '';
+                        var defaultOpt = document.createElement('option');
+                        defaultOpt.value = "";
+                        defaultOpt.text = "Select Shehia";
+                        nomShehiaSelect.appendChild(defaultOpt);
+
+                        var matchingCount = 0;
+                        allNomShehias.forEach(function(s) {
+                            if (!s.value) return;
+                            if (!selectedDistVal || isShehiaInDistrict(s, selectedDistVal)) {
+                                matchingCount++;
+                                var opt = document.createElement('option');
+                                opt.value = s.value;
+                                opt.text = s.text;
+                                opt.setAttribute('data-shehia-id', s.shehiaId);
+                                opt.setAttribute('data-district-id', s.districtId);
+                                opt.setAttribute('data-district-code', s.districtCode);
+                                opt.setAttribute('data-district-name', s.districtName);
+                                opt.setAttribute('data-region-id', s.regionId);
+                                opt.setAttribute('data-region-code', s.regionCode);
+                                if (currentShehiaVal && s.value === currentShehiaVal) {
+                                    opt.selected = true;
+                                }
+                                nomShehiaSelect.appendChild(opt);
+                            }
+                        });
+
+                        if (preserveSelection && currentShehiaVal) {
+                            selectNomShehia(currentShehiaVal);
+                        } else {
+                            if (nomShehiaSelect) nomShehiaSelect.value = '';
+                            if (nomShehiaSearchInput) {
+                                nomShehiaSearchInput.value = '';
+                                if (!selectedDistVal) {
+                                    nomShehiaSearchInput.placeholder = "Select District first...";
+                                } else {
+                                    nomShehiaSearchInput.placeholder = "Type to search Shehia (" + matchingCount + " available)...";
+                                }
+                            }
+                            if (nomShehiaClearBtn) nomShehiaClearBtn.style.display = 'none';
+                        }
+                        closeNomShehiaDropdown();
+                    }
+
+                    window.filterNomShehias = function() {
+                        filterNomShehias(false);
+                    };
+
                     function filterNomDistricts() {
                         var selectedVal = nomRegionSelect.value; // The value is the Code
 
@@ -344,20 +679,49 @@
                                 nomDistrictSelect.appendChild(opt);
                             }
                         });
+
+                        filterNomShehias(false);
                     }
 
                     nomRegionSelect.addEventListener('change', filterNomDistricts);
+                    nomDistrictSelect.addEventListener('change', function() {
+                        filterNomShehias(false);
+                    });
                     
                     // Trigger initial
                     if (nomRegionSelect.value) {
                         filterNomDistricts();
+                    }
+                    if (nomDistrictSelect.value) {
+                        filterNomShehias(true);
+                    }
+
+                    // Form submit validation for Nominee Shehia
+                    var form = document.querySelector('form.s_website_form') || document.querySelector('form');
+                    if (form) {
+                        form.addEventListener('submit', function(e) {
+                            if (nomShehiaSearchInput && nomShehiaSelect) {
+                                if (!nomShehiaSelect.value || nomShehiaSearchInput.value !== nomShehiaSelect.value) {
+                                    nomShehiaSearchInput.setCustomValidity('Please select a Shehia from the list');
+                                    nomShehiaSearchInput.reportValidity();
+                                    e.preventDefault();
+                                    return false;
+                                } else {
+                                    nomShehiaSearchInput.setCustomValidity('');
+                                }
+                            }
+                        });
                     }
 
                 } catch (e) {
                     console.error("Nominee filter error", e);
                 }
             });
+        ]]>
+        </script>
 
+        <script type="text/javascript">
+        <![CDATA[
             document.addEventListener("DOMContentLoaded", function() {
                 var searchBtn = document.getElementById('nominee_zan_id_search');
                 var zanInput = document.getElementById('nominee_zanid');
@@ -461,7 +825,18 @@
                                 setTimeout(() => {
                                     setSelect('nominee_district', result.nominee_district);
                                     setImg('nominee_image', result.nominee_image);
-                                }, 100);
+                                    if (typeof window.filterNomShehias === 'function') {
+                                        window.filterNomShehias();
+                                    }
+                                    if (result.nominee_shehia) {
+                                        var nomShehiaEl = document.getElementById('nominee_shehia');
+                                        if (nomShehiaEl) nomShehiaEl.value = result.nominee_shehia;
+                                        var nomSearchInp = document.getElementById('nominee_shehia_search_input');
+                                        if (nomSearchInp) nomSearchInp.value = result.nominee_shehia;
+                                        var nomClear = document.getElementById('nominee_shehia_clear_btn');
+                                        if (nomClear) nomClear.style.display = 'inline-block';
+                                    }
+                                }, 120);
 
                             } else {
                                 statusDiv.innerText = (result &amp;&amp; result.message) || "Not found";
@@ -476,6 +851,7 @@
                     });
                 }
             });
+        ]]>
         </script>
     </template>
 
@@ -1201,12 +1577,59 @@
                 </div>
             </div>
             <div class="col-lg-4">
-                <div class="s_website_form_field mb-3">
+                <div class="s_website_form_field mb-3 position-relative" id="shehia_field_container">
                     <label class="s_website_form_label" for="street2">
                         <span class="s_website_form_label_content" style="color: #666666;">Shehia (Ward)</span>
                         <span class="s_website_form_mark">*</span>
                     </label>
-                    <input type="text" id="street2" name="street2" class="form-control" required="1" t-att-value="beneficiary.street2 if beneficiary else ''"/>
+                    <!-- Hidden original select to preserve form submission name="street2" and backend bindings -->
+                    <select id="street2" name="street2" class="form-select" style="position: absolute; opacity: 0; pointer-events: none; height: 0; width: 0; margin: 0; padding: 0;" tabindex="-1">
+                        <option value="">Select Shehia</option>
+                        <t t-foreach="shehias" t-as="s">
+                            <option t-att-value="s.name"
+                                    t-att-data-shehia-id="s.id"
+                                    t-att-data-district-id="s.district_id.id"
+                                    t-att-data-region-id="s.region_id.id"
+                                    t-att-selected="beneficiary and (beneficiary.street2 == s.name or beneficiary.shehia_display == s.name)">
+                                <t t-esc="s.name"/>
+                            </option>
+                        </t>
+                    </select>
+
+                    <!-- Searchable Input UI -->
+                    <div class="input-group" id="shehia_search_group">
+                        <span class="input-group-text bg-white border-end-0 text-muted" style="border-color: #ced4da;">
+                            <i class="fa fa-search" style="font-size: 13px;"></i>
+                        </span>
+                        <input type="text"
+                               id="shehia_search_input"
+                               class="form-control border-start-0 border-end-0"
+                               placeholder="Type to search Shehia..."
+                               autocomplete="off"
+                               style="border-color: #ced4da; box-shadow: none;"
+                               required="1" />
+                        <button type="button"
+                                id="shehia_clear_btn"
+                                class="btn btn-outline-secondary border-start-0 border-end-0 text-muted"
+                                style="display: none; border-color: #ced4da; box-shadow: none;"
+                                tabindex="-1"
+                                title="Clear">
+                            &amp;times;
+                        </button>
+                        <button type="button"
+                                id="shehia_dropdown_toggle"
+                                class="btn btn-outline-secondary text-muted"
+                                style="border-color: #ced4da; box-shadow: none;"
+                                tabindex="-1">
+                            <span style="font-size: 10px;">&#9660;</span>
+                        </button>
+                    </div>
+
+                    <!-- Custom Dropdown Menu -->
+                    <div id="shehia_dropdown_menu"
+                         class="shadow border rounded-bottom"
+                         style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1060; background: #fff; max-height: 260px; overflow-y: auto; margin-top: 2px;">
+                    </div>
                 </div>
             </div>
         </div>
@@ -1357,13 +1780,21 @@
                                 
                                 // 2. Address and Location
                                 setVal('street', result.street);
-                                setVal('street2', result.street2);
                                 setVal('benf_post_code', result.benf_post_code);
                                 setSelect('ben_region', result.region);
-                                // Timeout to allow region change to populate districts
+                                // Timeout to allow region change to populate districts and filter shehias
                                 setTimeout(() => {
                                     setVal('ben_district', result.district);
-                                }, 100);
+                                    if (typeof window.filterShehias === 'function') {
+                                        window.filterShehias();
+                                    }
+                                    // Ensure Shehia is left unselected for manual selection from filtered list
+                                    var shehiaEl = document.getElementById('street2');
+                                    if (shehiaEl) shehiaEl.value = "";
+                                    if (typeof window.resetShehiaSearch === 'function') {
+                                         window.resetShehiaSearch();
+                                    }
+                                }, 120);
                                 setVal('disability', result.disability);
                                 setVal('type_of_disability', result.type_of_disability);
                                 if (typeof toggleDisabilityType === 'function') toggleDisabilityType();
@@ -1386,7 +1817,18 @@
                                 setSelect('nominee_region', result.nominee_region);
                                 setTimeout(() => {
                                     setVal('nominee_district', result.nominee_district);
-                                }, 100);
+                                    if (typeof window.filterNomShehias === 'function') {
+                                        window.filterNomShehias();
+                                    }
+                                    if (result.nominee_shehia) {
+                                        var nomShehiaEl = document.getElementById('nominee_shehia');
+                                        if (nomShehiaEl) nomShehiaEl.value = result.nominee_shehia;
+                                        var nomSearchInp = document.getElementById('nominee_shehia_search_input');
+                                        if (nomSearchInp) nomSearchInp.value = result.nominee_shehia;
+                                        var nomClear = document.getElementById('nominee_shehia_clear_btn');
+                                        if (nomClear) nomClear.style.display = 'inline-block';
+                                    }
+                                }, 120);
                                 setVal('nominee_post_code', result.nominee_post_code);
                                 setVal('nominee_shehia', result.nominee_shehia);
                                 setVal('nominee_house_street', result.nominee_house_street);
@@ -1490,11 +1932,13 @@
         </div>
         
         <script type="text/javascript">
+        <![CDATA[
             document.addEventListener("DOMContentLoaded", function() {
                 try {
                     // Try by ID first, then by name as fallback
                     var regionSelect = document.getElementById('ben_region') || document.querySelector('select[name="region"]');
                     var districtSelect = document.getElementById('ben_district') || document.querySelector('select[name="district"]');
+                    var shehiaSelect = document.getElementById('street2') || document.querySelector('select[name="street2"]');
                     
                     if (!regionSelect || !districtSelect) {
                         console.error("Region or District elements NOT FOUND.");
@@ -1510,6 +1954,285 @@
                             regionId: opt.getAttribute('data-region-id')
                         };
                     });
+
+                    // Clone allowed shehias
+                    var allShehias = [];
+                    if (shehiaSelect) {
+                        allShehias = Array.from(shehiaSelect.options).map(function(opt) {
+                            return {
+                                text: opt.text,
+                                value: opt.value,
+                                shehiaId: opt.getAttribute('data-shehia-id'),
+                                districtId: opt.getAttribute('data-district-id'),
+                                regionId: opt.getAttribute('data-region-id')
+                            };
+                        });
+                    }
+
+                    // Searchable Shehia elements
+                    var shehiaSearchInput = document.getElementById('shehia_search_input');
+                    var shehiaDropdownMenu = document.getElementById('shehia_dropdown_menu');
+                    var shehiaClearBtn = document.getElementById('shehia_clear_btn');
+                    var shehiaDropdownToggle = document.getElementById('shehia_dropdown_toggle');
+                    var currentActiveIndex = -1;
+
+                    function escapeRegExp(string) {
+                        return (string || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    }
+
+                    function escapeHtml(str) {
+                        return (str || '').replace(/[&<>'"]/g, function(tag) {
+                            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag;
+                        });
+                    }
+
+                    function closeShehiaDropdown() {
+                        if (shehiaDropdownMenu) {
+                            shehiaDropdownMenu.style.display = 'none';
+                            currentActiveIndex = -1;
+                        }
+                    }
+
+                    function setActiveItem(idx, items) {
+                        if (!items || items.length === 0) return;
+                        items.forEach(function(el, i) {
+                            if (i === idx) {
+                                el.style.backgroundColor = '#e9ecef';
+                                el.scrollIntoView({ block: 'nearest' });
+                            } else if (shehiaSelect && shehiaSelect.value === el.getAttribute('data-value')) {
+                                el.style.backgroundColor = '#e7f1ff';
+                            } else {
+                                el.style.backgroundColor = '#fff';
+                            }
+                        });
+                        currentActiveIndex = idx;
+                    }
+
+                    function selectShehia(val) {
+                        if (shehiaSelect) shehiaSelect.value = val;
+                        if (shehiaSearchInput) {
+                            shehiaSearchInput.value = val;
+                            shehiaSearchInput.setCustomValidity('');
+                        }
+                        if (shehiaClearBtn) {
+                            shehiaClearBtn.style.display = val ? 'inline-block' : 'none';
+                        }
+                        closeShehiaDropdown();
+                        if (shehiaSelect) shehiaSelect.dispatchEvent(new Event('change'));
+                    }
+
+                    function renderShehiaDropdown(searchTerm) {
+                        if (!shehiaDropdownMenu) return;
+                        var term = (searchTerm || '').trim().toLowerCase();
+                        var selectedDistVal = districtSelect ? districtSelect.value : "";
+
+                        var matches = [];
+                        allShehias.forEach(function(s) {
+                            if (!s.value) return;
+                            if (!selectedDistVal || s.districtId === selectedDistVal) {
+                                if (!term || s.text.toLowerCase().includes(term)) {
+                                    matches.push(s);
+                                }
+                            }
+                        });
+
+                        shehiaDropdownMenu.innerHTML = '';
+                        currentActiveIndex = -1;
+
+                        if (!selectedDistVal) {
+                            var msg = document.createElement('div');
+                            msg.className = 'p-3 text-muted text-center';
+                            msg.innerHTML = '<small><i class="fa fa-info-circle me-1"></i>Please select a District first</small>';
+                            shehiaDropdownMenu.appendChild(msg);
+                        } else if (matches.length === 0) {
+                            var noMatch = document.createElement('div');
+                            noMatch.className = 'p-3 text-muted text-center';
+                            noMatch.innerHTML = '<small><i class="fa fa-search me-1"></i>No Shehia found matching "<b>' + escapeHtml(searchTerm) + '</b>"</small>';
+                            shehiaDropdownMenu.appendChild(noMatch);
+                        } else {
+                            matches.forEach(function(s, idx) {
+                                var item = document.createElement('div');
+                                item.className = 'shehia-dropdown-item';
+                                item.style.padding = '8px 14px';
+                                item.style.cursor = 'pointer';
+                                item.style.fontSize = '14px';
+                                item.style.borderBottom = '1px solid #f2f2f2';
+                                item.setAttribute('data-value', s.value);
+
+                                if (shehiaSelect && shehiaSelect.value === s.value) {
+                                    item.style.backgroundColor = '#e7f1ff';
+                                    item.style.fontWeight = '600';
+                                    item.style.color = '#0d6efd';
+                                }
+
+                                if (term) {
+                                    var regex = new RegExp('(' + escapeRegExp(term) + ')', 'gi');
+                                    item.innerHTML = escapeHtml(s.text).replace(regex, '<span style="background-color: #ffeeba; font-weight: bold; padding: 0 1px;">$1</span>');
+                                } else {
+                                    item.textContent = s.text;
+                                }
+
+                                item.addEventListener('mouseenter', function() {
+                                    var allItems = shehiaDropdownMenu.querySelectorAll('.shehia-dropdown-item');
+                                    setActiveItem(idx, allItems);
+                                });
+
+                                item.addEventListener('mousedown', function(e) {
+                                    e.preventDefault();
+                                    selectShehia(s.value);
+                                });
+
+                                shehiaDropdownMenu.appendChild(item);
+                            });
+                        }
+
+                        shehiaDropdownMenu.style.display = 'block';
+                    }
+
+                    if (shehiaSearchInput) {
+                        shehiaSearchInput.addEventListener('input', function() {
+                            var term = this.value;
+                            if (shehiaClearBtn) {
+                                shehiaClearBtn.style.display = term ? 'inline-block' : 'none';
+                            }
+                            renderShehiaDropdown(term);
+                        });
+
+                        shehiaSearchInput.addEventListener('focus', function() {
+                            renderShehiaDropdown(this.value);
+                        });
+
+                        shehiaSearchInput.addEventListener('click', function() {
+                            renderShehiaDropdown(this.value);
+                        });
+
+                        shehiaSearchInput.addEventListener('keydown', function(e) {
+                            var items = shehiaDropdownMenu ? shehiaDropdownMenu.querySelectorAll('.shehia-dropdown-item') : [];
+                            if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                if (shehiaDropdownMenu && shehiaDropdownMenu.style.display === 'none') {
+                                    renderShehiaDropdown(this.value);
+                                    return;
+                                }
+                                if (items.length > 0) {
+                                    var next = (currentActiveIndex + 1) % items.length;
+                                    setActiveItem(next, items);
+                                }
+                            } else if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                if (items.length > 0) {
+                                    var prev = (currentActiveIndex - 1 + items.length) % items.length;
+                                    setActiveItem(prev, items);
+                                }
+                            } else if (e.key === 'Enter') {
+                                if (shehiaDropdownMenu && shehiaDropdownMenu.style.display !== 'none' && currentActiveIndex >= 0 && currentActiveIndex < items.length) {
+                                    e.preventDefault();
+                                    var val = items[currentActiveIndex].getAttribute('data-value');
+                                    selectShehia(val);
+                                }
+                            } else if (e.key === 'Escape') {
+                                closeShehiaDropdown();
+                            }
+                        });
+                    }
+
+                    if (shehiaDropdownToggle) {
+                        shehiaDropdownToggle.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            if (shehiaDropdownMenu && shehiaDropdownMenu.style.display === 'block') {
+                                closeShehiaDropdown();
+                            } else {
+                                if (shehiaSearchInput) shehiaSearchInput.focus();
+                                renderShehiaDropdown('');
+                            }
+                        });
+                    }
+
+                    if (shehiaClearBtn) {
+                        shehiaClearBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            selectShehia('');
+                            renderShehiaDropdown('');
+                            if (shehiaSearchInput) shehiaSearchInput.focus();
+                        });
+                    }
+
+                    document.addEventListener('click', function(e) {
+                        var container = document.getElementById('shehia_field_container');
+                        if (container && !container.contains(e.target)) {
+                            closeShehiaDropdown();
+                            if (shehiaSelect && shehiaSearchInput) {
+                                if (shehiaSelect.value) {
+                                    shehiaSearchInput.value = shehiaSelect.value;
+                                    if (shehiaClearBtn) shehiaClearBtn.style.display = 'inline-block';
+                                } else {
+                                    shehiaSearchInput.value = '';
+                                    if (shehiaClearBtn) shehiaClearBtn.style.display = 'none';
+                                }
+                            }
+                        }
+                    });
+
+                    window.resetShehiaSearch = function() {
+                        if (shehiaSelect) shehiaSelect.value = '';
+                        if (shehiaSearchInput) {
+                            shehiaSearchInput.value = '';
+                            shehiaSearchInput.setCustomValidity('');
+                        }
+                        if (shehiaClearBtn) shehiaClearBtn.style.display = 'none';
+                        closeShehiaDropdown();
+                    };
+
+                    function filterShehias(preserveSelection) {
+                        if (!shehiaSelect) return;
+                        var selectedDistVal = districtSelect ? districtSelect.value : "";
+                        var currentShehiaVal = preserveSelection ? shehiaSelect.value : "";
+
+                        shehiaSelect.innerHTML = '';
+                        var defaultOpt = document.createElement('option');
+                        defaultOpt.value = "";
+                        defaultOpt.text = "Select Shehia";
+                        shehiaSelect.appendChild(defaultOpt);
+
+                        var matchingCount = 0;
+                        allShehias.forEach(function(s) {
+                            if (!s.value) return; // Skip original default
+                            if (!selectedDistVal || s.districtId === selectedDistVal) {
+                                matchingCount++;
+                                var opt = document.createElement('option');
+                                opt.value = s.value;
+                                opt.text = s.text;
+                                opt.setAttribute('data-shehia-id', s.shehiaId);
+                                opt.setAttribute('data-district-id', s.districtId);
+                                opt.setAttribute('data-region-id', s.regionId);
+                                if (currentShehiaVal && s.value === currentShehiaVal) {
+                                    opt.selected = true;
+                                }
+                                shehiaSelect.appendChild(opt);
+                            }
+                        });
+
+                        if (preserveSelection && currentShehiaVal) {
+                            selectShehia(currentShehiaVal);
+                        } else {
+                            if (shehiaSelect) shehiaSelect.value = '';
+                            if (shehiaSearchInput) {
+                                shehiaSearchInput.value = '';
+                                if (!selectedDistVal) {
+                                    shehiaSearchInput.placeholder = "Select District first...";
+                                } else {
+                                    shehiaSearchInput.placeholder = "Type to search Shehia (" + matchingCount + " available)...";
+                                }
+                            }
+                            if (shehiaClearBtn) shehiaClearBtn.style.display = 'none';
+                        }
+                        closeShehiaDropdown();
+                    }
+
+                    // Expose globally for API callbacks
+                    window.filterShehias = function() {
+                        filterShehias(false);
+                    };
                     
                     function filterDistricts() {
                         var selectedVal = regionSelect.value; // ID
@@ -1538,19 +2261,45 @@
                                 districtSelect.appendChild(opt);
                             }
                         });
+
+                        filterShehias(false);
                     }
 
                     regionSelect.addEventListener('change', filterDistricts);
+                    districtSelect.addEventListener('change', function() {
+                        filterShehias(false);
+                    });
                     
                     // Trigger initial
                     if (regionSelect.value) {
                         filterDistricts();
+                    }
+                    if (districtSelect.value) {
+                        filterShehias(true);
+                    }
+
+                    // Form submit validation for searchable Shehia
+                    var form = document.querySelector('form.s_website_form') || document.querySelector('form');
+                    if (form) {
+                        form.addEventListener('submit', function(e) {
+                            if (shehiaSearchInput && shehiaSelect) {
+                                if (!shehiaSelect.value || shehiaSearchInput.value !== shehiaSelect.value) {
+                                    shehiaSearchInput.setCustomValidity('Please select a Shehia from the list');
+                                    shehiaSearchInput.reportValidity();
+                                    e.preventDefault();
+                                    return false;
+                                } else {
+                                    shehiaSearchInput.setCustomValidity('');
+                                }
+                            }
+                        });
                     }
 
                 } catch (e) {
                     console.error(e);
                 }
             });
+        ]]>
         </script>
 
         <!-- Phone Number Validation on Form Submit (Overriding base validateForm) -->

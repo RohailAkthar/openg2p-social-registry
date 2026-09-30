@@ -339,10 +339,11 @@ class G2PSocialRegistryModel(G2PregistrationPortalBase):
         regions = list(unique_regions_map.values())
 
         districts = request.env["g2p.district"].sudo().search([])
+        shehias = request.env["g2p.shehia"].sudo().search([("active", "=", True)])
         id_types = request.env["g2p.id.type"].sudo().search([])
         return request.render(
             "g2p_registration_portal_base.individual_registrant_form_template",
-            {"gender": gender, "regions": regions, "districts": districts, "id_types": id_types},
+            {"gender": gender, "regions": regions, "districts": districts, "shehias": shehias, "id_types": id_types},
         )
 
     @http.route(
@@ -364,6 +365,7 @@ class G2PSocialRegistryModel(G2PregistrationPortalBase):
             regions = list(unique_regions_map.values())
 
             districts = request.env["g2p.district"].sudo().search([])
+            shehias = request.env["g2p.shehia"].sudo().search([("active", "=", True)])
             id_types = request.env["g2p.id.type"].sudo().search([])
             beneficiary = request.env["res.partner"].sudo().browse(_id)
             if not beneficiary:
@@ -379,6 +381,7 @@ class G2PSocialRegistryModel(G2PregistrationPortalBase):
                     "gender": gender,
                     "regions": regions,
                     "districts": districts,
+                    "shehias": shehias,
                     "id_types": id_types,
                 },
             )
