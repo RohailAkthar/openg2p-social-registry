@@ -236,11 +236,12 @@
                                        placeholder="Type to search Shehia..."
                                        autocomplete="off"
                                        style="border-color: #ced4da; box-shadow: none;"
-                                       required="1" />
+                                       required="1"
+                                       t-att-value="beneficiary and beneficiary.nominee_shehia or ''" />
                                 <button type="button"
                                         id="nominee_shehia_clear_btn"
                                         class="btn btn-outline-secondary border-start-0 border-end-0 text-muted"
-                                        style="display: none; border-color: #ced4da; box-shadow: none;"
+                                        t-att-style="'display: inline-block; border-color: #ced4da; box-shadow: none;' if (beneficiary and beneficiary.nominee_shehia) else 'display: none; border-color: #ced4da; box-shadow: none;'"
                                         tabindex="-1"
                                         title="Clear">
                                     &amp;times;
@@ -596,10 +597,10 @@
                         closeNomShehiaDropdown();
                     };
 
-                    function filterNomShehias(preserveSelection) {
+                    function filterNomShehias(preserveSelection, targetVal) {
                         if (!nomShehiaSelect) return;
                         var selectedDistVal = nomDistrictSelect ? nomDistrictSelect.value : "";
-                        var currentShehiaVal = preserveSelection ? nomShehiaSelect.value : "";
+                        var currentShehiaVal = targetVal || (preserveSelection ? (nomShehiaSelect.value || (nomShehiaSearchInput ? nomShehiaSearchInput.value : "")) : "");
 
                         nomShehiaSelect.innerHTML = '';
                         var defaultOpt = document.createElement('option');
@@ -621,14 +622,15 @@
                                 opt.setAttribute('data-district-name', s.districtName);
                                 opt.setAttribute('data-region-id', s.regionId);
                                 opt.setAttribute('data-region-code', s.regionCode);
-                                if (currentShehiaVal && s.value === currentShehiaVal) {
+                                if (currentShehiaVal && s.value.trim().toLowerCase() === currentShehiaVal.trim().toLowerCase()) {
                                     opt.selected = true;
+                                    currentShehiaVal = s.value;
                                 }
                                 nomShehiaSelect.appendChild(opt);
                             }
                         });
 
-                        if (preserveSelection && currentShehiaVal) {
+                        if (currentShehiaVal) {
                             selectNomShehia(currentShehiaVal);
                         } else {
                             if (nomShehiaSelect) nomShehiaSelect.value = '';
@@ -649,7 +651,7 @@
                         filterNomShehias(false);
                     };
 
-                    function filterNomDistricts() {
+                    function filterNomDistricts(preserveShehia) {
                         var selectedVal = nomRegionSelect.value; // The value is the Code
 
                         // Clear and Rebuild
@@ -677,20 +679,27 @@
                             }
                         });
 
-                        filterNomShehias(false);
+                        if (!preserveShehia) {
+                            filterNomShehias(false);
+                        }
                     }
 
-                    nomRegionSelect.addEventListener('change', filterNomDistricts);
+                    nomRegionSelect.addEventListener('change', function() {
+                        filterNomDistricts(false);
+                    });
                     nomDistrictSelect.addEventListener('change', function() {
                         filterNomShehias(false);
                     });
                     
                     // Trigger initial
+                    var initialNomShehia = (nomShehiaSelect ? nomShehiaSelect.value : '') || (nomShehiaSearchInput ? nomShehiaSearchInput.value : '');
                     if (nomRegionSelect.value) {
-                        filterNomDistricts();
+                        filterNomDistricts(true);
                     }
                     if (nomDistrictSelect.value) {
-                        filterNomShehias(true);
+                        filterNomShehias(true, initialNomShehia);
+                    } else if (initialNomShehia) {
+                        selectNomShehia(initialNomShehia);
                     }
 
                     // Form submit validation for Nominee Shehia
@@ -1510,10 +1519,11 @@
                 <div class="s_website_form_field mb-3">
                     <label class="s_website_form_label" for="mobile">
                         <span class="s_website_form_label_content" style="color: #666666;">Mobile</span>
+                        <span class="s_website_form_mark">*</span>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text" id="mobile-addon">+255</span>
-                        <input type="tel" id="mobile_visual" class="form-control" maxlength="9" minlength="9"
+                        <input type="tel" id="mobile_visual" class="form-control" maxlength="9" minlength="9" required="1"
                                pattern="[67][0-9]{8}"
                                title="Phone number must start with 6 or 7 and be 9 digits"
                                oninput="
@@ -1603,11 +1613,12 @@
                                placeholder="Type to search Shehia..."
                                autocomplete="off"
                                style="border-color: #ced4da; box-shadow: none;"
-                               required="1" />
+                               required="1"
+                               t-att-value="beneficiary and (beneficiary.street2 or beneficiary.shehia_display) or ''" />
                         <button type="button"
                                 id="shehia_clear_btn"
                                 class="btn btn-outline-secondary border-start-0 border-end-0 text-muted"
-                                style="display: none; border-color: #ced4da; box-shadow: none;"
+                                t-att-style="'display: inline-block; border-color: #ced4da; box-shadow: none;' if (beneficiary and (beneficiary.street2 or beneficiary.shehia_display)) else 'display: none; border-color: #ced4da; box-shadow: none;'"
                                 tabindex="-1"
                                 title="Clear">
                             &amp;times;
@@ -2176,10 +2187,10 @@
                         closeShehiaDropdown();
                     };
 
-                    function filterShehias(preserveSelection) {
+                    function filterShehias(preserveSelection, targetVal) {
                         if (!shehiaSelect) return;
                         var selectedDistVal = districtSelect ? districtSelect.value : "";
-                        var currentShehiaVal = preserveSelection ? shehiaSelect.value : "";
+                        var currentShehiaVal = targetVal || (preserveSelection ? (shehiaSelect.value || (shehiaSearchInput ? shehiaSearchInput.value : "")) : "");
 
                         shehiaSelect.innerHTML = '';
                         var defaultOpt = document.createElement('option');
@@ -2190,7 +2201,7 @@
                         var matchingCount = 0;
                         allShehias.forEach(function(s) {
                             if (!s.value) return; // Skip original default
-                            if (!selectedDistVal || s.districtId === selectedDistVal) {
+                            if (!selectedDistVal || String(s.districtId) === String(selectedDistVal)) {
                                 matchingCount++;
                                 var opt = document.createElement('option');
                                 opt.value = s.value;
@@ -2198,14 +2209,15 @@
                                 opt.setAttribute('data-shehia-id', s.shehiaId);
                                 opt.setAttribute('data-district-id', s.districtId);
                                 opt.setAttribute('data-region-id', s.regionId);
-                                if (currentShehiaVal && s.value === currentShehiaVal) {
+                                if (currentShehiaVal && s.value.trim().toLowerCase() === currentShehiaVal.trim().toLowerCase()) {
                                     opt.selected = true;
+                                    currentShehiaVal = s.value;
                                 }
                                 shehiaSelect.appendChild(opt);
                             }
                         });
 
-                        if (preserveSelection && currentShehiaVal) {
+                        if (currentShehiaVal) {
                             selectShehia(currentShehiaVal);
                         } else {
                             if (shehiaSelect) shehiaSelect.value = '';
@@ -2227,7 +2239,7 @@
                         filterShehias(false);
                     };
                     
-                    function filterDistricts() {
+                    function filterDistricts(preserveShehia) {
                         var selectedVal = regionSelect.value; // ID
                         
                         // Clear and Rebuild
@@ -2255,20 +2267,27 @@
                             }
                         });
 
-                        filterShehias(false);
+                        if (!preserveShehia) {
+                            filterShehias(false);
+                        }
                     }
 
-                    regionSelect.addEventListener('change', filterDistricts);
+                    regionSelect.addEventListener('change', function() {
+                        filterDistricts(false);
+                    });
                     districtSelect.addEventListener('change', function() {
                         filterShehias(false);
                     });
                     
                     // Trigger initial
+                    var initialShehia = (shehiaSelect ? shehiaSelect.value : '') || (shehiaSearchInput ? shehiaSearchInput.value : '');
                     if (regionSelect.value) {
-                        filterDistricts();
+                        filterDistricts(true);
                     }
                     if (districtSelect.value) {
-                        filterShehias(true);
+                        filterShehias(true, initialShehia);
+                    } else if (initialShehia) {
+                        selectShehia(initialShehia);
                     }
 
                     // Form submit validation for searchable Shehia
@@ -2319,11 +2338,11 @@
                             if (mobileErrDiv) mobileErrDiv.style.display = 'none';
                             if (nomineeErrDiv) nomineeErrDiv.style.display = 'none';
 
-                            // Validate beneficiary phone (if filled)
-                            if (mobileVisual &amp;&amp; mobileVisual.value.length > 0) {
-                                if (!benPhoneRegex.test(mobileVisual.value)) {
-                                    errors.push({field: mobileVisual, errId: 'mobile_error', section: 'demographic', label: 'Beneficiary Mobile', msg: ' must start with 6 or 7 and be 9 digits'});
-                                }
+                            // Validate beneficiary phone (Required)
+                            if (!mobileVisual || !mobileVisual.value || mobileVisual.value.trim().length === 0) {
+                                errors.push({field: mobileVisual, errId: 'mobile_error', section: 'demographic', label: 'Beneficiary Mobile', msg: ' is required'});
+                            } else if (!benPhoneRegex.test(mobileVisual.value.trim())) {
+                                errors.push({field: mobileVisual, errId: 'mobile_error', section: 'demographic', label: 'Beneficiary Mobile', msg: ' must start with 6 or 7 and be 9 digits'});
                             }
 
                             // Validate nominee phone (if filled)
@@ -2606,10 +2625,11 @@
                         <div class="s_website_form_field mb-3">
                             <label class="s_website_form_label" for="mobile">
                                 <span class="s_website_form_label_content" style="color: #666666;">Mobile</span>
+                                <span class="s_website_form_mark">*</span>
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text" id="mobile-addon">+255</span>
-                                <input type="tel" id="mobile_visual" class="form-control" maxlength="9" minlength="9"
+                                <input type="tel" id="mobile_visual" class="form-control" maxlength="9" minlength="9" required="1"
                                        pattern="[67][0-9]{8}"
                                        title="Phone number must start with 6 or 7 and be 9 digits"
                                        oninput="
