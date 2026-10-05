@@ -141,9 +141,9 @@
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text" id="nominee-mobile-addon">+255</span>
-                                <input type="tel" id="nominee_mobile_visual" class="form-control" maxlength="9" minlength="9"
-                                       pattern="[67][0-9]{8}"
-                                       title="Phone number must start with 6 or 7 and be 9 digits"
+                                <input type="tel" id="nominee_mobile_visual" class="form-control"
+                                       pattern="[67][0-9]*"
+                                       title="Phone number must start with 6 or 7"
                                        oninput="
                                            this.value = this.value.replace(/[^0-9]/g, '');
                                            var fullVal = '+255' + this.value;
@@ -155,9 +155,6 @@
                                            } else {
                                                if (errDiv) errDiv.style.display = 'none';
                                                this.classList.remove('is-invalid');
-                                               if (this.value.length === 9) {
-                                                   this.classList.remove('is-invalid');
-                                               }
                                            }
                                        " 
                                        t-att-value="(beneficiary.nominee_mobile[4:] if beneficiary and beneficiary.nominee_mobile and beneficiary.nominee_mobile.startswith('+255') else (beneficiary.nominee_mobile[3:] if beneficiary and beneficiary.nominee_mobile and beneficiary.nominee_mobile.startswith('255') else (beneficiary.nominee_mobile[1:] if beneficiary and beneficiary.nominee_mobile and beneficiary.nominee_mobile.startswith('0') else (beneficiary.nominee_mobile if beneficiary and beneficiary.nominee_mobile else ''))))"
@@ -736,7 +733,7 @@
                         }
 
                         var benefZanId = document.getElementById('benf_zan_id') ? document.getElementById('benf_zan_id').value : '';
-                        if (zanId &amp;&amp; benefZanId &amp;&amp; zanId.trim() === benefZanId.trim()) {
+                        if (zanId && benefZanId && zanId.trim() === benefZanId.trim()) {
                             statusDiv.innerText = "Nominee Zan ID and Beneficiary Zan ID cannot be the same.";
                             statusDiv.style.color = "red";
                             statusDiv.style.display = "block";
@@ -762,7 +759,7 @@
                         .then(data => {
                             var result = data.result;
                             console.log("Nominee search result:", result);
-                            if (result &amp;&amp; (result.status === 'SUCCESS' || result.status === 'ALREADY_EXISTS_BUT_FILL')) {
+                            if (result && (result.status === 'SUCCESS' || result.status === 'ALREADY_EXISTS_BUT_FILL')) {
                                 
                                 if (result.status === 'ALREADY_EXISTS_BUT_FILL') {
                                     statusDiv.innerText = result.message;
@@ -788,7 +785,7 @@
                                         }
                                         
                                         var hiddenVal = rawVal;
-                                        if (rawVal &amp;&amp; !rawVal.startsWith('+255')) {
+                                        if (rawVal && !rawVal.startsWith('+255')) {
                                              if (rawVal.startsWith('255')) hiddenVal = '+' + rawVal;
                                              else if (rawVal.startsWith('0')) hiddenVal = '+255' + rawVal.substring(1);
                                              else hiddenVal = '+255' + rawVal;
@@ -805,18 +802,18 @@
                                 }
                                 function setSelect(id, val) {
                                     var el = document.getElementById(id);
-                                    if (el &amp;&amp; val) {
+                                    if (el && val) {
                                         el.value = val;
                                         el.dispatchEvent(new Event('change'));
                                     }
                                 }
 
                                 setVal('nominee_first_name', result.nominee_first_name);
+                                setVal('nominee_middle_name', result.nominee_middle_name);
                                 setVal('nominee_last_name', result.nominee_last_name);
                                 setVal('nominee_gender', result.nominee_gender);
                                 setVal('nominee_mobile', result.nominee_mobile);
                                 setVal('nominee_house_street', result.nominee_house_street);
-                                setVal('nominee_shehia', result.nominee_shehia);
                                 setSelect('nominee_rel_benf', result.nominee_rel_benf);
                                 setVal('nominee_post_code', result.nominee_post_code);
                                 
@@ -828,18 +825,17 @@
                                     if (typeof window.filterNomShehias === 'function') {
                                         window.filterNomShehias();
                                     }
-                                    if (result.nominee_shehia) {
-                                        var nomShehiaEl = document.getElementById('nominee_shehia');
-                                        if (nomShehiaEl) nomShehiaEl.value = result.nominee_shehia;
-                                        var nomSearchInp = document.getElementById('nominee_shehia_search_input');
-                                        if (nomSearchInp) nomSearchInp.value = result.nominee_shehia;
-                                        var nomClear = document.getElementById('nominee_shehia_clear_btn');
-                                        if (nomClear) nomClear.style.display = 'inline-block';
-                                    }
+                                    // Ensure Nominee Shehia is left unselected for manual selection from filtered list
+                                    var nomShehiaEl = document.getElementById('nominee_shehia');
+                                    if (nomShehiaEl) nomShehiaEl.value = "";
+                                    var nomSearchInp = document.getElementById('nominee_shehia_search_input');
+                                    if (nomSearchInp) nomSearchInp.value = "";
+                                    var nomClear = document.getElementById('nominee_shehia_clear_btn');
+                                    if (nomClear) nomClear.style.display = 'none';
                                 }, 120);
 
                             } else {
-                                statusDiv.innerText = (result &amp;&amp; result.message) || "Not found";
+                                statusDiv.innerText = (result && result.message) || "Not found";
                                 statusDiv.style.color = "red";
                             }
                         })
@@ -1820,17 +1816,14 @@
                                     if (typeof window.filterNomShehias === 'function') {
                                         window.filterNomShehias();
                                     }
-                                    if (result.nominee_shehia) {
-                                        var nomShehiaEl = document.getElementById('nominee_shehia');
-                                        if (nomShehiaEl) nomShehiaEl.value = result.nominee_shehia;
-                                        var nomSearchInp = document.getElementById('nominee_shehia_search_input');
-                                        if (nomSearchInp) nomSearchInp.value = result.nominee_shehia;
-                                        var nomClear = document.getElementById('nominee_shehia_clear_btn');
-                                        if (nomClear) nomClear.style.display = 'inline-block';
-                                    }
+                                    var nomShehiaEl = document.getElementById('nominee_shehia');
+                                    if (nomShehiaEl) nomShehiaEl.value = "";
+                                    var nomSearchInp = document.getElementById('nominee_shehia_search_input');
+                                    if (nomSearchInp) nomSearchInp.value = "";
+                                    var nomClear = document.getElementById('nominee_shehia_clear_btn');
+                                    if (nomClear) nomClear.style.display = 'none';
                                 }, 120);
                                 setVal('nominee_post_code', result.nominee_post_code);
-                                setVal('nominee_shehia', result.nominee_shehia);
                                 setVal('nominee_house_street', result.nominee_house_street);
                                 
                                 // 5. Pension
@@ -2313,7 +2306,8 @@
                         window.validateForm = function(isCreateForm) {
                             var mobileVisual = document.getElementById('mobile_visual');
                             var nomineeVisual = document.getElementById('nominee_mobile_visual');
-                            var phoneRegex = /^[67][0-9]{8}$/;
+                            var benPhoneRegex = /^[67][0-9]{8}$/;   // Beneficiary: starts with 6/7, exactly 9 digits
+                            var phoneRegex = /^[67][0-9]*$/;         // Nominee: starts with 6/7, no length limit
                             var errors = [];
 
                             // Reset previous invalid states
@@ -2327,20 +2321,20 @@
 
                             // Validate beneficiary phone (if filled)
                             if (mobileVisual &amp;&amp; mobileVisual.value.length > 0) {
-                                if (!phoneRegex.test(mobileVisual.value)) {
-                                    errors.push({field: mobileVisual, errId: 'mobile_error', section: 'demographic', label: 'Beneficiary Mobile'});
+                                if (!benPhoneRegex.test(mobileVisual.value)) {
+                                    errors.push({field: mobileVisual, errId: 'mobile_error', section: 'demographic', label: 'Beneficiary Mobile', msg: ' must start with 6 or 7 and be 9 digits'});
                                 }
                             }
 
                             // Validate nominee phone (if filled)
                             if (nomineeVisual &amp;&amp; nomineeVisual.value.length > 0) {
                                 if (!phoneRegex.test(nomineeVisual.value)) {
-                                    errors.push({field: nomineeVisual, errId: 'nominee_mobile_error', section: 'nominee_info', label: 'Nominee Mobile'});
+                                    errors.push({field: nomineeVisual, errId: 'nominee_mobile_error', section: 'nominee_info', label: 'Nominee Mobile', msg: ' must start with 6 or 7'});
                                 }
                             }
 
                             if (errors.length > 0) {
-                                var messages = errors.map(function(err) { return err.label + ' must start with 6 or 7 and be 9 digits'; });
+                                var messages = errors.map(function(err) { return err.label + err.msg; });
                                 alert(messages.join('\n'));
 
                                 // Show error styling
@@ -2615,7 +2609,9 @@
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text" id="mobile-addon">+255</span>
-                                <input type="tel" id="mobile_visual" class="form-control" maxlength="9" 
+                                <input type="tel" id="mobile_visual" class="form-control" maxlength="9" minlength="9"
+                                       pattern="[67][0-9]{8}"
+                                       title="Phone number must start with 6 or 7 and be 9 digits"
                                        oninput="
                                            this.value = this.value.replace(/[^0-9]/g, '');
                                            var fullVal = '+255' + this.value;

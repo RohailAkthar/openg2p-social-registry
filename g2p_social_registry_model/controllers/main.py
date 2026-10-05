@@ -13,7 +13,7 @@ _logger = logging.getLogger(__name__)
 
 
 class G2PSocialRegistryModel(G2PregistrationPortalBase):
-    def _validate_tz_phone(self, phone):
+    def _validate_tz_phone(self, phone, strict_length=False):
         if not phone:
             return None
         # Normalize: strip +255 or 255 or leading 0
@@ -25,9 +25,13 @@ class G2PSocialRegistryModel(G2PregistrationPortalBase):
         elif local.startswith('0'):
             local = local[1:]
         
-        # Check if local is 9 digits starting with 6 or 7
-        if local and not re.match(r'^[67][0-9]{8}$', local):
-            return "Phone number must start with 6 or 7 after +255 and be 9 digits"
+        if strict_length:
+            # Beneficiary: must start with 6 or 7 and be exactly 9 digits
+            if local and not re.match(r'^[67][0-9]{8}$', local):
+                return "Phone number must start with 6 or 7 after +255 and be 9 digits"
+        # Nominee: must start with 6 or 7 (no length restriction)
+        elif local and not re.match(r'^[67][0-9]*$', local):
+            return "Phone number must start with 6 or 7 after +255"
         return None
 
     @http.route("/portal/registration/zan_id_lookup", type="json", auth="user", csrf=False)
@@ -480,7 +484,7 @@ class G2PSocialRegistryModel(G2PregistrationPortalBase):
     def individual_create_submit(self, **kw):
         try:
             # Validate phone numbers before processing
-            phone_error = self._validate_tz_phone(kw.get("mobile"))
+            phone_error = self._validate_tz_phone(kw.get("mobile"), strict_length=True)
             if phone_error:
                 return request.render(
                     "g2p_registration_portal_base.error_template",
@@ -607,7 +611,7 @@ class G2PSocialRegistryModel(G2PregistrationPortalBase):
     def update_individual_submit(self, **kw):
         try:
             # Validate phone numbers
-            phone_error = self._validate_tz_phone(kw.get("mobile"))
+            phone_error = self._validate_tz_phone(kw.get("mobile"), strict_length=True)
             if phone_error:
                 return request.render(
                     "g2p_registration_portal_base.error_template",
