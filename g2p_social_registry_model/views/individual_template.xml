@@ -266,6 +266,22 @@
                 
                 <div class="row mem-ind-row" style="padding: 0 20px 20px 20px;">
                     <div class="col-lg-4">
+                         <div class="s_website_form_field mb-3">
+                            <label class="s_website_form_label" for="nominee_house_street">
+                                <span class="s_website_form_label_content" style="color: #666666;">House &amp; Street</span>
+                                <span class="s_website_form_mark">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="nominee_house_street"
+                                name="nominee_house_street"
+                                class="form-control"
+                                required="1"
+                                t-att-value="beneficiary.nominee_house_street if beneficiary else ''"
+                            />
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
                         <div class="s_website_form_field mb-3">
                             <label class="s_website_form_label" for="nominee_post_code">
                                 <span class="s_website_form_label_content" style="color: #666666;">PO BOX / Post code</span>
@@ -280,22 +296,6 @@
                                 pattern="[0-9]*"
                                 oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                                 t-att-value="beneficiary.nominee_post_code if beneficiary else ''"
-                            />
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                         <div class="s_website_form_field mb-3">
-                            <label class="s_website_form_label" for="nominee_house_street">
-                                <span class="s_website_form_label_content" style="color: #666666;">House &amp; Street</span>
-                                <span class="s_website_form_mark">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                id="nominee_house_street"
-                                name="nominee_house_street"
-                                class="form-control"
-                                required="1"
-                                t-att-value="beneficiary.nominee_house_street if beneficiary else ''"
                             />
                         </div>
                     </div>
@@ -1641,16 +1641,8 @@
             </div>
         </div>
 
-        <!-- Row 4: PO BOX / Post code, House & Street, Disability Status -->
+        <!-- Row 4: House & Street, PO BOX / Post code, Disability Status -->
         <div class="row mem-ind-row" style="padding: 0 20px 20px 20px;">
-            <div class="col-lg-4">
-                <div class="s_website_form_field mb-3">
-                    <label class="s_website_form_label" for="benf_post_code">
-                        <span class="s_website_form_label_content" style="color: #666666;">PO BOX / Post code</span>
-                    </label>
-                    <input type="text" id="benf_post_code" name="benf_post_code" class="form-control" pattern="[0-9]*" minlength="6" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '')" t-att-value="beneficiary.benf_post_code if beneficiary else ''"/>
-                </div>
-            </div>
             <div class="col-lg-4">
                 <div class="s_website_form_field mb-3">
                     <label class="s_website_form_label" for="street">
@@ -1658,6 +1650,14 @@
                         <span class="s_website_form_mark">*</span>
                     </label>
                     <input type="text" id="street" name="street" class="form-control" required="1" t-att-value="beneficiary.street if beneficiary else ''"/>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="s_website_form_field mb-3">
+                    <label class="s_website_form_label" for="benf_post_code">
+                        <span class="s_website_form_label_content" style="color: #666666;">PO BOX / Post code</span>
+                    </label>
+                    <input type="text" id="benf_post_code" name="benf_post_code" class="form-control" pattern="[0-9]*" minlength="6" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '')" t-att-value="beneficiary.benf_post_code if beneficiary else ''"/>
                 </div>
             </div>
             <div class="col-lg-4">
@@ -2653,27 +2653,7 @@
                     </div>
                 </div>
 
-                <!-- Row 3: ADDRESS (Combined) & POST CODE -->
-                <div class="row mem-ind-row" style="padding: 0 20px 20px 20px;">
-                    <div class="col-lg-8">
-                        <div class="s_website_form_field mb-3">
-                            <label class="s_website_form_label" for="address">
-                                <span class="s_website_form_label_content" style="color: #666666;">Address</span>
-                            </label>
-                            <input type="text" id="address" name="address" class="form-control" t-att-value="beneficiary.address if beneficiary else ''" disabled="disabled" style="background-color: #e9ecef;"/>
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="s_website_form_field mb-3">
-                            <label class="s_website_form_label" for="benf_post_code">
-                                <span class="s_website_form_label_content" style="color: #666666;">PO BOX / Post code</span>
-                            </label>
-                            <input type="text" id="benf_post_code" name="benf_post_code" class="form-control" minlength="6" maxlength="6" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" t-att-value="beneficiary.benf_post_code if beneficiary else ''"/>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Row 4: Region, District, Disability -->
+                <!-- Row 3: Region, District, Shehia (Ward) -->
                 <div class="row mem-ind-row" style="padding: 0 20px 20px 20px;">
                     <div class="col-lg-4">
                         <div class="s_website_form_field mb-3">
@@ -2683,7 +2663,7 @@
                             <select id="ben_region" name="region" class="form-select">
                                 <option value="">Select</option>
                                 <t t-foreach="regions" t-as="r">
-                                    <option t-att-value="r.id" t-att-selected="beneficiary and beneficiary.region.id == r.id" t-att-data-region-code="r.code">
+                                    <option t-att-value="r.id" t-att-selected="beneficiary and beneficiary.region and (beneficiary.region.id == r.id or beneficiary.region == r.name)" t-att-data-region-code="r.code">
                                         <t t-esc="r.name"/>
                                     </option>
                                 </t>
@@ -2698,11 +2678,39 @@
                             <select id="ben_district" name="district" class="form-select">
                                 <option value="">Select</option>
                                 <t t-foreach="districts" t-as="d">
-                                    <option t-att-value="d.id" t-att-selected="beneficiary and beneficiary.district.id == d.id" t-att-data-district-code="d.code" t-att-data-region-id="d.province_id.id">
+                                    <option t-att-value="d.id" t-att-selected="beneficiary and beneficiary.district and (beneficiary.district.id == d.id or beneficiary.district == d.name)" t-att-data-district-code="d.code" t-att-data-region-id="d.province_id.id">
                                         <t t-esc="d.name"/>
                                     </option>
                                 </t>
                             </select>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="s_website_form_field mb-3">
+                            <label class="s_website_form_label" for="street2">
+                                <span class="s_website_form_label_content" style="color: #666666;">Shehia (Ward)</span>
+                            </label>
+                            <input type="text" id="street2" name="street2" class="form-control" t-att-value="beneficiary and (beneficiary.shehia_display or beneficiary.street2 or (beneficiary.shehia_id.name if hasattr(beneficiary, 'shehia_id') and beneficiary.shehia_id else '') or (beneficiary.address.split(',')[1].strip() if beneficiary.address and ',' in beneficiary.address else (beneficiary.address or ''))) or ''"/>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 4: House & Street, PO BOX / Post code, Disability Status -->
+                <div class="row mem-ind-row" style="padding: 0 20px 20px 20px;">
+                    <div class="col-lg-4">
+                        <div class="s_website_form_field mb-3">
+                            <label class="s_website_form_label" for="street">
+                                <span class="s_website_form_label_content" style="color: #666666;">House &amp; Street</span>
+                            </label>
+                            <input type="text" id="street" name="street" class="form-control" t-att-value="beneficiary and (beneficiary.street or (beneficiary.address.split(',')[0].strip() if beneficiary.address and ',' in beneficiary.address else '')) or ''"/>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="s_website_form_field mb-3">
+                            <label class="s_website_form_label" for="benf_post_code">
+                                <span class="s_website_form_label_content" style="color: #666666;">PO BOX / Post code</span>
+                            </label>
+                            <input type="text" id="benf_post_code" name="benf_post_code" class="form-control" minlength="6" maxlength="6" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" t-att-value="beneficiary.benf_post_code if beneficiary else ''"/>
                         </div>
                     </div>
                     <div class="col-lg-4">
